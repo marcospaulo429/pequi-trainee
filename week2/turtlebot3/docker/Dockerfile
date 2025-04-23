@@ -1,22 +1,5 @@
 FROM osrf/ros:humble-desktop-full
 
-# Add Mesa3D software rendering and audio dependencies right after base image
-RUN apt update && apt install -y \
-    libgl1-mesa-glx \
-    libgl1-mesa-dri \
-    mesa-utils \
-    libgomp1 \
-    alsa-base \
-    alsa-utils \
-    pulseaudio \
-    && rm -rf /var/lib/apt/lists/*
-
-# Add environment variables for software rendering
-ENV LIBGL_ALWAYS_SOFTWARE=1
-ENV GALLIUM_DRIVER=swrast
-ENV DISPLAY=host.docker.internal:0
-
-# Keep your existing package installations
 RUN apt update && apt install -y \
     nano \
     git \
@@ -45,7 +28,6 @@ RUN apt update && apt install -y \
     ros-humble-control-msgs \
     && rm -rf /var/lib/apt/lists/*
 
-# Keep your existing workspace setup
 RUN mkdir -p /root/turtlebot3_ws/src && cd /root/turtlebot3_ws/src && \
     git clone -b humble-devel https://github.com/pmec-atwork/turtlebot3.git && \
     git clone -b humble-devel https://github.com/pmec-atwork/turtlebot3_simulations && \
@@ -55,7 +37,6 @@ RUN mkdir -p /root/turtlebot3_ws/src && cd /root/turtlebot3_ws/src && \
 
 ENV TURTLEBOT3_MODEL=waffle
 
-# Keep your existing bashrc setup
 RUN echo "source /opt/ros/humble/setup.bash" >> /root/.bashrc && \
     echo "source /root/turtlebot3_ws/install/setup.bash" >> /root/.bashrc && \
     echo "source /usr/share/gazebo/setup.bash" >> /root/.bashrc

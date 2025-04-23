@@ -6,38 +6,46 @@ if [ -z "$1" ]; then
     exit 1
 fi
 
-# Obter IP da interface en0 (MacOS)
-IP=$(ipconfig getifaddr en0)
-xhost + $IP
-
-# Nome da imagem do Docker
+# Nome da imagem do Docker a partir do argumento
 IMAGE_NAME=$1
 
-# Configurações X11 para MacOS
-export DISPLAY="${IP}:0"
+# Armazenar o diretório raiz do projeto
+ROOT_DIR=$(pwd)
+
+# Permitir conexão com o servidor X
+xhost +local:docker
+
+# Criar o arquivo .docker.xauth e adicionar as permissões necessárias
 XAUTH=/tmp/.docker.xauth
 touch $XAUTH
 xauth nlist $DISPLAY | sed -e 's/^..../ffff/' | xauth -f $XAUTH nmerge -
 
-# Rodar o container com todas as configurações necessárias
+# Definir o diretório de trabalho do container
+HOST_WORK_PATH="$ROOT_DIR/ros_packages"
+CONTAINER_WORK_PATH="/root/ros2_ws/src"
+
+# Definir o diretório de dados compartilhado entre o host e o container
+HOST_DATA_PATH="$ROOT_DIR/shared_folder"
+CONTAINER_DATA_PATH="/root/shared_folder"
+
+# Rodar o container com as configurações necessárias
 docker run -it \
   --rm \
   --name turtlebot3_container \
-  --platform linux/amd64 \               # Forçar emulação x86_64
-  --network=host \
-  --ipc=host \
+  --privileged \
   --user=root \
-  --env="DISPLAY=${IP}:0" \
+  --network=host \
+  --env="DISPLAY=$DISPLAY" \
   --env="QT_X11_NO_MITSHM=1" \
-  --env="LIBGL_ALWAYS_SOFTWARE=1" \      # Forçar renderização por software
-  --env="GALLIUM_DRIVER=swrast" \        # Driver Mesa para renderização
-  --env="XAUTHORITY=$XAUTH" \
   --volume="/tmp/.X11-unix:/tmp/.X11-unix:rw" \
+  --env="XAUTHORITY=$XAUTH" \
   --volume="$XAUTH:$XAUTH" \
-  --volume="$HOME/ros2_ws:/my_source_code:rw" \
-  --volume="$(pwd)/shared_folder:/root/shared_folder:rw" \
-  "$IMAGE_NAME" \
-  /bin/bash -c "source /opt/ros/humble/setup.bash && \
-               source /root/turtlebot3_ws/install/setup.bash && \
-               export TURTLEBOT3_MODEL=waffle && \
-               ros2 launch turtlebot3_gazebo empty_world.launch.py"
+  --volume="$HOST_WORK_PATH:$CONTAINER_WORK_PATH:rw" \
+  --volume="$HOST_DATA_PATH:$CONTAINER_DATA_PATH:rw" \
+  $IMAGE_NAME
+
+# Configurações adicionais para NVIDIA GPU (descomente se necessário)
+#   --runtime nvidia \
+#   --gpus all \
+#   --env="NVIDIA_VISIBLE_DEVICES=all" \
+#   --env="NVIDIA_DRIVER_CAPABILITIES=all" \

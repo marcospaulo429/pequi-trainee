@@ -1,6 +1,3 @@
-# Pequi_capacitacao_2025
-Repositório criado para a capacitação do pequi mecânico 2025
-
 ## Resumo
 
 Obs1: uma vez que não existe maneira viável de se fazer dual boot com ubuntu e uma VM utilizaria muitos recursos no mac, comprometendo o uso do ROS, não instalei o SO-Ubuntu e fiz tudo direto usando docker
